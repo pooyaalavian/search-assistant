@@ -1,0 +1,15 @@
+
+
+.hover-icon .regular {
+    display: block;
+}
+.hover-icon .filled {
+    display: none;
+}
+
+.hover-icon:hover .regular {
+  display: none;
+}
+.hover-icon:hover .filled {
+  display: block;
+}
