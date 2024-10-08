@@ -368,5 +368,5 @@ async def delete_user_conversations():
     return jsonify({"status": "ok", **counts})
 
 
-if __name__ == "__main__":
-    app = create_app()
+# if __name__ == "__main__":
+app = create_app()
