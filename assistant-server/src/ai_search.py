@@ -2,52 +2,10 @@ from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
 import json
 
-# todo: calc this dynamically
-total_attributes = 33
 
 
 class AISearchClient:
-    def __init__(self, search_endpoint, search_index_name, search_key):
-        self.service_endpoint = search_endpoint
-        self.index_name = search_index_name
-        self.key = search_key
-        self.search_client = SearchClient(
-            self.service_endpoint, self.index_name, AzureKeyCredential(self.key)
-        )
-
-    def get_chassis_by_id(self, chassis_id)->dict:
-        results = self.search_client.search(
-            search_text=chassis_id,
-            skip=0,
-            search_fields=["ID"],
-            include_total_count=True,
-        )
-        
-        count = results.get_count()
-        if count != 1:
-            raise ValueError(f"Expected 1 result, got {count} results.")
-        
-        for item in results:
-            return item
-
-        return None
-
-    def calculate_matching_score(self, result, chaissis, attributes):
-        match_count = 0
-        for attribute in attributes:
-            key = attribute.split(":")[0]
-            key = key.split("'")[1]  # Extract the key name from the string
-            if result.get(key) == chaissis.get(key):
-                match_count += 1
-        return match_count / total_attributes
-
-    def get_matching_chassis(self, chassis_id, count_needed=10) -> list[dict]:
-        chassis = self.get_chassis_by_id(chassis_id)
-        if not chassis:
-            return []
-
-        all_matched_chassis = []
-        
+    def search_keys(self, remove_from_top=0):
         search_keys = [
             "dealer",
             "intended_service",
@@ -84,7 +42,49 @@ class AISearchClient:
             "chassis_year",
             "base_model",
         ]
-        search_criteria = [ f"{key}: '{chassis[key]}'" for key in search_keys]
+        return search_keys[remove_from_top:]
+    
+    def __init__(self, search_endpoint, search_index_name, search_key):
+        self.service_endpoint = search_endpoint
+        self.index_name = search_index_name
+        self.key = search_key
+        self.search_client = SearchClient(
+            self.service_endpoint, self.index_name, AzureKeyCredential(self.key)
+        )
+
+    def get_chassis_by_id(self, chassis_id)->dict:
+        results = self.search_client.search(
+            search_text=chassis_id,
+            skip=0,
+            search_fields=["ID"],
+            include_total_count=True,
+        )
+        
+        count = results.get_count()
+        if count != 1:
+            raise ValueError(f"Expected 1 result, got {count} results.")
+        
+        for item in results:
+            return item
+
+        return None
+
+    def calculate_matching_score(self, result, chaissis):
+        match_count = 0
+        total_count = 0
+        for key in self.search_keys():
+            if result.get(key) == chaissis.get(key):
+                match_count += 1
+            total_count += 1
+        return match_count / total_count
+
+    def get_matching_chassis(self, chassis_id, count_needed=10) -> list[dict]:
+        chassis = self.get_chassis_by_id(chassis_id)
+        if not chassis:
+            return []
+
+        all_matched_chassis = []
+        search_criteria = [ f"{key}: '{chassis[key]}'" for key in self.search_keys()]
         total_attributes = len(search_criteria)
 
         match_criteria = total_attributes
@@ -103,7 +103,8 @@ class AISearchClient:
             if count > 0:
                 for result in iterator:
                     if result["ID"] != chassis["ID"]:
-                        score = match_criteria / total_attributes
+                        score = match_criteria / total_attributes # actually calc based on the 2 chassis
+                        score = self.calculate_matching_score(result, chassis)
                         result["_score"] = score
                         if result['ID'] not in [m['ID'] for m in all_matched_chassis]:
                             all_matched_chassis.append(result)
