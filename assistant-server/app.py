@@ -371,5 +371,10 @@ async def delete_user_conversations():
     return jsonify({"status": "ok", **counts})
 
 
+@bp.route("/version", methods=["GET"])
+async def version():
+    from _version import VERSION
+    return jsonify({"version": VERSION})
+
 # if __name__ == "__main__":
 app = create_app()
