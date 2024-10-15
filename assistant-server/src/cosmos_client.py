@@ -179,7 +179,7 @@ class CosmosConversationClient(MyCosmosClient):
         else:
             return False
 
-    async def add_search_message(self, conversation_id, results=[], query=""):
+    async def add_search_message(self, conversation_id, base_chassis, results=[], query=""):
         id = str(uuid.uuid4())
         message = {
             "id": id,
@@ -190,6 +190,7 @@ class CosmosConversationClient(MyCosmosClient):
             "sender": "search_results",
             "content": "",
             "results": results,
+            "baseChassis": base_chassis,
             "query": query,
         }
 

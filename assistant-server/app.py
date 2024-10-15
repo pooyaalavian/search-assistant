@@ -241,11 +241,14 @@ async def init_or_load_conversation():
     if conv is None:
         conv = await client.create_conversation(user_id=user_id, chassis_id=chassis_id)
         search_client: AISearchClient = current_app.search_client
+        # 0. Get original chassis data for conversation
+        chassis_data = search_client.get_chassis_by_id(chassis_id)
+        
         # 1. perform search
         search_result = search_client.get_matching_chassis(chassis_id, count_needed=10)
 
         # 2. save search in cosmos message
-        msg = await client.add_search_message(conv["id"], search_result)
+        msg = await client.add_search_message(conv["id"], chassis_data, search_result)
 
         # 3. update conv with search
         conv["messages"].append(msg)
@@ -260,7 +263,7 @@ async def handle_chat(conv, oai_client: AsyncAzureOpenAI, cosmos_client:CosmosCo
             "role": "system",
             "content": "You are Chassis design engineer assistant. A chassis engineer working on a truck ordered by customer is chatting with you. He is given a few chassis that are similar to chassis he is trying to design. Help answer his questions. When possible, display the results in tabular format.",
         },
-        {"role": "user", "content": "Show me 10 related chassis."},
+        {"role": "user", "content": "Show me 10 related chassis to my base chassis."},
     ]
     for m in conv["messages"]:
         if m["sender"] == "user":
@@ -268,7 +271,7 @@ async def handle_chat(conv, oai_client: AsyncAzureOpenAI, cosmos_client:CosmosCo
         elif m["sender"] == "assistant" and m["state"] == "completed":
             messages.append({"role": "assistant", "content": m["content"]})
         elif m["sender"] == "search_results":
-            content = ""
+            content = f"Base chassis:\nID: {m['baseChassis']['ID']}\n{m['baseChassis']['description']}\n\nRelated Chassis:\n"
             for id, r in enumerate(m["results"]):
                 content += f"Item {id+1} ID: {r['ID']}\n{r['description']}\n\n"
             messages.append({"role": "assistant", "content": content})

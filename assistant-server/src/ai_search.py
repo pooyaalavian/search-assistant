@@ -1,5 +1,6 @@
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
+from azure.search.documents.models import VectorizableTextQuery
 import json
 
 
@@ -69,16 +70,23 @@ class AISearchClient:
 
         return None
 
-    def calculate_matching_score(self, result, chaissis):
+    def calculate_matching_score(self, chassis1, chassis2):
         match_count = 0
         total_count = 0
         for key in self.search_keys():
-            if result.get(key) == chaissis.get(key):
+            if chassis1.get(key) == chassis2.get(key):
                 match_count += 1
             total_count += 1
         return match_count / total_count
 
     def get_matching_chassis(self, chassis_id, count_needed=10) -> list[dict]:
+        alg = 2
+        if alg == 1:
+            return self._get_matching_chassis_iterative(chassis_id, count_needed)
+        else:
+            return self._get_matching_chassis_vector(chassis_id, count_needed)
+    
+    def _get_matching_chassis_iterative(self, chassis_id, count_needed) -> list[dict]:
         chassis = self.get_chassis_by_id(chassis_id)
         if not chassis:
             return []
@@ -124,3 +132,32 @@ class AISearchClient:
                 
         return filtered_list[:count_needed]
 
+    def _get_matching_chassis_vector(self, chassis_id, count_needed) -> list[dict]:
+        chassis = self.get_chassis_by_id(chassis_id)
+        if not chassis:
+            return []
+       
+        description = chassis["description"]
+ 
+        vector_query = VectorizableTextQuery(text=description, k_nearest_neighbors=150, fields="embedding", exhaustive=True)
+ 
+        print(vector_query)
+       
+        iterator = self.search_client.search(  
+            #search_text=query,  
+            vector_queries= [vector_query],
+            #select=["ID", "division", "dealer", "chassis_number"],
+            top=150
+        )  
+ 
+        all_matched_chassis = []
+        for result in iterator:  
+            if result["ID"] != chassis["ID"]:
+                score = self.calculate_matching_score(result, chassis)
+                result["_score"] = score
+                if result['ID'] not in [m['ID'] for m in all_matched_chassis]:
+                            all_matched_chassis.append(result)
+               
+        filtered_list = sorted(all_matched_chassis, key=lambda x: x["_score"], reverse=True)
+               
+        return filtered_list[:count_needed]
