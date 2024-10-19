@@ -179,7 +179,7 @@ class CosmosConversationClient(MyCosmosClient):
         else:
             return False
 
-    async def add_search_message(self, conversation_id, base_chassis, results=[], query=""):
+    async def add_search_results_message(self, conversation_id, base_chassis, results=[], query=""):
         id = str(uuid.uuid4())
         message = {
             "id": id,
@@ -192,6 +192,25 @@ class CosmosConversationClient(MyCosmosClient):
             "results": results,
             "baseChassis": base_chassis,
             "query": query,
+        }
+
+        resp = await self.container_client.upsert_item(message)
+        if resp:
+            return resp
+        else:
+            return False
+    
+    async def add_search_request_message(self, conversation_id, search_keys=[]):
+        id = str(uuid.uuid4())
+        message = {
+            "id": id,
+            "conversationId": conversation_id,
+            "messageId": id,
+            "type": "message",
+            "timestamp": int(datetime.now().timestamp()),
+            "sender": "search_request",
+            "content": "",
+            "query": search_keys,
         }
 
         resp = await self.container_client.upsert_item(message)
