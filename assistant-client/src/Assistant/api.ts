@@ -16,7 +16,7 @@ export class AssistantApi {
     chassisElementId: string;
 
     constructor(apiServer: string, chassisElementId: string) {
-        this.apiServer = apiServer;
+        this.apiServer = apiServer + '/api';
         this.chassisElementId = chassisElementId;
     }
 
