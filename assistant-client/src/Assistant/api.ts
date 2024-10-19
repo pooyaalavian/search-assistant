@@ -1,5 +1,15 @@
 import { AssistantMessage, Conversation, IdString, Message, MessagePair, UserMessage } from "./types";
 
+const K_SELECTORS = [
+    ["-kwr"],
+    ["webapp-test", "/REI/"],
+];
+
+const P_SELECTORS = [
+    ["pbdenton"],
+    ["webapp-test.", "/PB_REI/"],
+];
+
 const SessionIdKey = 'ms-ai-assistant-session-id';
 export class AssistantApi {
     apiServer: string;
@@ -33,7 +43,7 @@ export class AssistantApi {
         return data;
     }
 
-    async pollMessage(conversationId: string, msgId: string, userId:string): Promise<AssistantMessage> {
+    async pollMessage(conversationId: string, msgId: string, userId: string): Promise<AssistantMessage> {
         const qp = new URLSearchParams({ userId }).toString();
         const response = await fetch(`${this.apiServer}/conversation/${conversationId}/message/${msgId}?${qp}`, {
             method: 'GET',
@@ -43,7 +53,7 @@ export class AssistantApi {
         return data;
     }
 
-    async sendFeedback(conversationId: string, msgId: string, liked: 1 | 0 | -1, userId:string): Promise<AssistantMessage> {
+    async sendFeedback(conversationId: string, msgId: string, liked: 1 | 0 | -1, userId: string): Promise<AssistantMessage> {
         const qp = new URLSearchParams({ userId }).toString();
         const response = await fetch(`${this.apiServer}/conversation/${conversationId}/message/${msgId}/feedback?${qp}`, {
             method: 'PUT',
@@ -60,8 +70,12 @@ export class AssistantApi {
         const { chassisNo, orderYear, reiUrl } = element.dataset;
         if (!chassisNo || !orderYear || !reiUrl) return null;
         let div = 'X';
-        if (reiUrl.includes('pbdenton')) div = 'P';
-        if (reiUrl.includes('kenworth')) div = 'K';
+        K_SELECTORS.forEach(selectorSet => {
+            if (selectorSet.every(selector => reiUrl.includes(selector))) div = 'K';
+        });
+        P_SELECTORS.forEach(selectorSet => {
+            if (selectorSet.every(selector => reiUrl.includes(selector))) div = 'P';
+        });
         return `C${chassisNo}_${div}20${orderYear}`;
     }
 
