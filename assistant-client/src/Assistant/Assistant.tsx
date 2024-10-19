@@ -204,7 +204,7 @@ export default function Assistant(props: AssistantInputs) {
 
     return (
         <div className="fixed bottom-0 right-0 w-[600px] h-[720px] max-h-screen pb-4 pr-4">
-            <div className="container relative w-full h-full overflow-hidden border-gray-300 border shadow-md shadow-gray-800/50 flex flex-col rounded-sm">
+            <div className="relative w-full h-full overflow-hidden border-gray-300 border shadow-md shadow-gray-800/50 flex flex-col rounded-sm">
                 <div id="header" className="flex-0 h-12 bg-gray-100 p-4 flex items-center border-b border-gray-300">
                     <img src="" alt="" className="icon" />
                     <h1 className="flex-1 font-bold">PACCAR AI Assistant</h1>
