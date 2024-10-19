@@ -1,3 +1,5 @@
 .venv
 .env
 node_modules/
+mock-frontend/
+test-app/
