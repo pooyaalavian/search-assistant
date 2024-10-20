@@ -256,3 +256,14 @@ class CosmosConversationClient(MyCosmosClient):
                 await self.container_client.delete_item(item, partition_key=conversationId)
                 deleteCount[item["type"]] += 1
         return deleteCount
+    
+    async def delete_conversation(self, conversation_id):
+        query = f"SELECT * FROM c WHERE c.conversationId = '{conversation_id}'"
+        deleteCount = {
+            "conversation": 0,
+            "message": 0,
+        }
+        async for item in self.container_client.query_items(query):
+            await self.container_client.delete_item(item, partition_key=conversation_id)
+            deleteCount[item["type"]] += 1
+        return deleteCount

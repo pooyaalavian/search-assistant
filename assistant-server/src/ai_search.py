@@ -65,7 +65,6 @@ class AISearchClient:
             {"name":"full_insert","type":"extended"},
             {"name":"partial_insert","type":"extended"},
             {"name":"partial_insert_location","type":"extended"},
-            {"name":"defects","type":"extended"},
         ]
         
         default_search_keys = top_search_keys + broad_search_keys 
@@ -106,7 +105,9 @@ class AISearchClient:
         match_count = 0
         total_count = 0
         if len(scoring_search_keys)==0:
-            scoring_search_keys = [key['name'] for key in self.search_keys()]
+            scoring_search_keys = self.search_keys()
+            
+        scoring_search_keys = [key['name'] for key in scoring_search_keys]
             
         for key in scoring_search_keys:
             if chassis1.get(key) == chassis2.get(key):
@@ -121,7 +122,10 @@ class AISearchClient:
         else:
             return self._get_matching_chassis_vector(chassis_id, count_needed)
     
-    def get_matching_chassis_custom(self, chassis_id:str, search_keys:list[dict], count_needed=10) -> list[dict]:
+    def get_matching_chassis_custom(self, chassis_id:str, search_keys:list[dict], count_needed=None) -> list[dict]:
+        if count_needed is None:
+            count_needed = 10
+        
         mandatory=[k for k in search_keys if k['mandatory']==True]
         removeable=[k for k in search_keys if k['mandatory']==False]
         return self._get_matching_chassis_iterative(
@@ -137,7 +141,7 @@ class AISearchClient:
             return []
         
         
-        scoring_search_keys = mandatory_search_criteria + removeable_search_criteria
+        scoring_search_keys = mandatory_search_keys + removeable_search_keys
         if len(mandatory_search_keys) ==0 and len(removeable_search_keys) == 0:
             removeable_search_keys = self.search_keys()
 

@@ -23,7 +23,7 @@ from src.ai_search import AISearchClient
 from src import init_openai_client, init_cosmosdb_conversation_client, init_search_client
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
-api_bp = Blueprint("routes", __name__, url_prefix="/api")
+api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 cosmos_db_ready = asyncio.Event()
 
@@ -189,10 +189,12 @@ async def post_new_search(conversation_id):
     chassis_id = conv.get("chassisId")
     search_keys = body.get("searchKeys", [])
     count_needed = body.get("countNeeded", None)
-    await cosmos_client.add_user_message(conversation_id, search_keys)
+    await cosmos_client.add_search_request_message(conversation_id, search_keys)
     
     base_chassis = search_client.get_chassis_by_id(chassis_id)
-    results = search_client.get_matching_chassis_custom(chassis_id, search_keys, count_needed)
+    
+    selected_search_keys = [k for k in search_keys if k['selected']==True]
+    results = search_client.get_matching_chassis_custom(chassis_id, selected_search_keys, count_needed)
     await cosmos_client.add_search_results_message(conversation_id, base_chassis, results)
     
     conv = await cosmos_client.verify_conversation(conversation_id, user_id, with_messages=True)
@@ -244,6 +246,23 @@ async def update_feedback(conversation_id, message_id):
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route("/conversation/<conversation_id>", methods=["DELETE"])
+async def delete_conversation(conversation_id):
+    user_id = request.args.get("userId")
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+
+    client: CosmosConversationClient = current_app.cosmos_conversation_client
+    conv = await client.verify_conversation(
+        conversation_id, user_id, with_messages=False
+    )
+    if conv is None:
+        return jsonify({"error": "conversation not found or user does not own it"}), 404
+    
+    counts = await client.delete_conversation(conv['conversationId'])
+    return jsonify({"status": "ok", **counts}) 
+
+
 @api_bp.route("/user/conversations", methods=["DELETE"])
 async def delete_user_conversations():
     user_id = request.args.get("userId")
@@ -254,10 +273,19 @@ async def delete_user_conversations():
     counts = await client.delete_all_conversations(user_id)
     return jsonify({"status": "ok", **counts})
 
+
 @api_bp.route("/search/keys", methods=["GET"])
 async def get_search_keys():
     search_client: AISearchClient = current_app.search_client
     keys = search_client.search_keys(extended=True)
+    for key in keys:
+        key['selected'] = False
+        key['mandatory'] = False
+        if key['type'] in ['top','broad']:
+            key['selected'] = True
+        if key['type'] in ['broad']:
+            key['mandatory'] = True
+            
     return jsonify(keys)
 
     
