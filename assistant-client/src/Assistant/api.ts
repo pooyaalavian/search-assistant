@@ -1,4 +1,4 @@
-import { AssistantMessage, Conversation, IdString, Message, MessagePair, UserMessage } from "./types";
+import { AssistantMessage, Conversation, IdString, Message, MessagePair, SearchKey, UserMessage } from "./types";
 
 const K_SELECTORS = [
     ["-kwr"],
@@ -62,6 +62,37 @@ export class AssistantApi {
         });
         const data: AssistantMessage = await response.json();
         return data
+    }
+
+    async getSearchKeys(): Promise<SearchKey[]> {
+        const response = await fetch(`${this.apiServer}/search/keys`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', },
+        });
+        const data: SearchKey[] = await response.json();
+        data.forEach((sk,idx) => sk.id = `${idx}`);
+        return data;
+    }
+
+    async performCustomSearch(conversationId: string, searchKeys: SearchKey[], userId: string, countNeeded?: number): Promise<Conversation> {
+        const qp = new URLSearchParams({ userId }).toString();
+        const response = await fetch(`${this.apiServer}/conversation/${conversationId}/search?${qp}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', },
+            body: JSON.stringify({ searchKeys, countNeeded }),
+        });
+        const data: Conversation = await response.json();
+        return data;
+    }
+
+    async deleteConversation(conversationId: string, userId: string) {
+        const qp = new URLSearchParams({ userId }).toString();
+        const response = await fetch(`${this.apiServer}/conversation/${conversationId}?${qp}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', },
+        });
+        const data: { status: 'ok'; conversation: number; message: number } = await response.json();
+        return data;
     }
 
     getInContextChassisId(): IdString | null {

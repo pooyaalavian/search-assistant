@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { AssistantState, Message } from "./types";
+import { AssistantState, Message, SearchKey } from "./types";
 import chatBubbleActive from './assets/chat-bubbles.svg';
 import chatBubbleInactive from './assets/chat-bubbles-gray.svg';
 import MessagePanel from "./message/Message";
@@ -9,7 +9,8 @@ import ComposeMessage from "./message/ComposeMessage";
 import { useLocation } from "react-router-dom";
 import './styles.css';
 import { LoadingCard } from "./components/LoadingCard";
-
+import { ActiveSearchRequestMessagePanel } from "./message/SearchRequestMessage";
+import { ErrorCard } from "./components/ErrorCard";
 
 declare global {
     interface Window {
@@ -34,6 +35,8 @@ export default function Assistant(props: AssistantInputs) {
         conversation: null,
         status: 'ready',
     });
+    const [showNewSearch, setShowNewSearch] = useState(false);
+    const [searchKeys, setSearchKeys] = useState<SearchKey[]>([]);
     window.assistant_state = props;
     const api = new AssistantApi(props.apiServer, props.chassisElementId);
     const [retries, setRetries] = useState(0);
@@ -63,24 +66,36 @@ export default function Assistant(props: AssistantInputs) {
 
     }, [location, retries]);
 
+    const initOrLoadConversation = async (inContextChassisId: string, inContextUserName: string) => {
+        try {
+            const conversation = await api.initOrLoadConversation(inContextChassisId, inContextUserName);
+            setMyState(s => ({
+                ...s,
+                conversation,
+                error: undefined,
+            }));
+            setShowNewSearch(false);
+
+        }
+        catch (e) {
+            const err: Error = e as any;
+            console.error('Error getting conversation:', e);
+            setMyState(s => ({
+                ...s,
+                error: err.message,
+            }));
+        }
+    };
+
     useEffect(() => {
         if (!myState.inContextChassisId) {
-            return setMyState({
-                ...myState,
+            return setMyState(s => ({
+                ...s,
                 conversation: null,
-            });
+            }));
         }
         if (myState.inContextChassisId && myState.inContextUserName && !myState.conversation) {
-            api.initOrLoadConversation(myState.inContextChassisId, myState.inContextUserName)
-                .then((conversation) => {
-                    setMyState(v => ({
-                        ...v,
-                        conversation,
-                    }));
-                })
-                .catch((e) => {
-                    console.error('Error getting conversation:', e);
-                });
+            initOrLoadConversation(myState.inContextChassisId, myState.inContextUserName);
         }
     }, [myState.inContextChassisId, myState.inContextUserName]);
 
@@ -177,10 +192,54 @@ export default function Assistant(props: AssistantInputs) {
         }
     };
 
+    const handleDeleteChat = async () => {
+        if (!myState.conversation || !myState.inContextUserName) return;
+        const counts = await api.deleteConversation(myState.conversation.conversationId, myState.inContextUserName!);
+
+        if (counts.conversation > 0) {
+            setMyState(s => ({
+                ...s,
+                conversation: null,
+            }));
+            await initOrLoadConversation(myState.inContextChassisId!, myState.inContextUserName!);
+        }
+    };
+
+    const initiateNewSearch = async () => {
+        const searchKeys = await api.getSearchKeys();
+        setSearchKeys(searchKeys);
+        setShowNewSearch(true);
+    };
+    const discardNewSearch = () => {
+        setShowNewSearch(false);
+        setSearchKeys([]);
+    };
+
+    const submitNewSearch = async (searchKeys: SearchKey[], countNeeded?: number) => {
+        console.log('submitting search keys:', searchKeys);
+        setShowNewSearch(false);
+        try {
+            const conversation = await api.performCustomSearch(myState.conversation!.conversationId, searchKeys, myState.inContextUserName!, countNeeded);
+            setMyState(s => ({
+                ...s,
+                conversation,
+                error: undefined,
+            }));
+        }
+        catch (e) {
+            const err: Error = e as any;
+            console.error('Error performing search:', e);
+            setMyState(s => ({
+                ...s,
+                error: err.message,
+            }));
+        }
+    };
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
-    useEffect(scrollToBottom, [myState.conversation]);
+    useEffect(scrollToBottom, [myState.conversation, showNewSearch]);
 
     if (!myState.inContextChassisId) {
         return (
@@ -203,7 +262,7 @@ export default function Assistant(props: AssistantInputs) {
     }
 
     return (
-        <div className="fixed bottom-0 right-0 w-[600px] h-[720px] max-h-screen pb-4 pr-4">
+        <div className="fixed bottom-0 right-0 w-[700px] h-[720px] max-h-screen pb-4 pr-4">
             <div className="relative w-full h-full overflow-hidden border-gray-300 border shadow-md shadow-gray-800/50 flex flex-col rounded-sm">
                 <div id="header" className="flex-0 h-12 bg-gray-100 p-4 flex items-center border-b border-gray-300">
                     <img src="" alt="" className="icon" />
@@ -213,15 +272,32 @@ export default function Assistant(props: AssistantInputs) {
                     </button>
                 </div>
                 <div id="messages" className="flex-1 bg-gray-100 p-4 overflow-y-auto">
-                    {!myState.conversation && <LoadingCard />}
+                    {!myState.conversation && !myState.error && <LoadingCard />}
+                    {myState.error && <ErrorCard error={myState.error} />}
                     {myState.conversation && myState.conversation.messages && myState.conversation.messages.map((message, index) => <MessagePanel message={message} key={index} onSendFeedback={onSendFeedback} />)}
-                    <div ref={messagesEndRef} />
+
+                    {myState.conversation?.messages.length && <div className="" ref={messagesEndRef}>
+                        {showNewSearch &&
+                            <ActiveSearchRequestMessagePanel searchKeys={searchKeys} onDiscard={discardNewSearch} onSubmit={submitNewSearch} />
+                        }
+                        {!showNewSearch &&
+                            <div className="flex pt-2 justify-center">
+                                <div className="m-1">
+                                    <button onClick={handleDeleteChat} className="border border-red-700 text-red-700 p-1 rounded-md hover:bg-red-700 hover:text-white text-sm">Delete chat </button>
+                                </div>
+                                <div className="m-1">
+                                    <button onClick={initiateNewSearch} className="border border-purple-700 text-purple-700 p-1 rounded-md hover:bg-purple-700 hover:text-white text-sm">Search again</button>
+                                </div>
+                            </div>
+                        }
+                    </div>}
                 </div>
                 <div id="input" className="flex-0 h-28 bg-gray-100 flex items-center border-t border-gray-300">
                     <ComposeMessage disabled={!myState.conversation} sendMessage={onSendMessage} />
                 </div>
                 <div id="paccar-assistant-portal"></div>
             </div>
+            <div id="unused-classes" className="bg-purple-800 w-[1px] h-[1px] overflow-hidden peer-checked:bg-purple-600">a</div>
         </div>
     )
 }

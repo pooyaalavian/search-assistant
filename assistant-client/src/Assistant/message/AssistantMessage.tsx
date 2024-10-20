@@ -62,7 +62,7 @@ export default function AssistantMessagePanel({ message, onSendFeedback }: { mes
                     </div>
                      {!completed && <div className="body p-2">...</div>}
                     {completed && <>
-                        <div className="body p-2">
+                        <div className="body p-2 overflow-x-auto">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                 {message.content}
                             </ReactMarkdown>

@@ -1,12 +1,12 @@
-import { ChassisAiSearchResult, SearchMessage } from "../types";
+import React, { useState } from "react";
+import { ChassisAiSearchResult, SearchResultsMessage } from "../types";
 import MessageTime from "./MessageTime";
 import copilot from '../assets/copilot.svg';
 import ReactDOM from 'react-dom';
-import React, { useState } from "react";
 import { Dismiss16Filled } from '@fluentui/react-icons';
 
 
-export function SearchResultMessage({ message, }: { message: SearchMessage, }) {
+export function SearchResultMessage({ message, }: { message: SearchResultsMessage, }) {
     return (
         <div className="pt-4 flex-col">
             <div className="flex-0"><MessageTime timestamp={message.timestamp} /></div>
@@ -36,21 +36,21 @@ function SearchTable({ data }: { data: ChassisAiSearchResult[] }) {
         { title: '', show: true },
         { title: 'Chassis no.', show: true, key: 'chassis_number', },
         { title: 'Order Year', show: true, key: 'chassis_year', },
-        { title: 'Division', show: true, key: 'division', },
+        { title: 'Customer', show: true, key: 'customer_name', },
         { title: 'Schedule Date', show: true, key: 'schedule_date', },
         { title: 'Matching Score', show: true, key: '_score', },
-        { title: 'Number of Defects', show: true, key: 'defects', },
+        { title: 'Defects', show: true, key: 'defects', },
         { title: 'Links', show: true, key: 'links', },
     ];
 
     return <>
         <div className="overflow-x-auto">
-            <table className="">
+            <table className="text-sm">
                 <thead>
                     <tr>
-                        {columns.map((col, id) => {
+                        {columns.map((col, index) => {
                             if (col.show) {
-                                return <th key={id} className="px-1">{col.title}</th>
+                                return <th className="px-1" key={index}>{col.title}</th>
                             }
                         })}
                     </tr>
@@ -115,14 +115,16 @@ function SearchRow({ data, rowNumber }: { data: ChassisAiSearchResult, rowNumber
                     </div>
                 </div>
                 </td>
-            <td className={tdClass}>{data.chassis_number}</td>
+            <td className={tdClass}>{data.chassis_number} 
+                <span className="bg-sky-400 px-1 rounded-md ml-1">{data.division}</span>
+            </td>
             <td className={tdClass}>{data.chassis_year}</td>
-            <td className={tdClass}>{data.division}</td>
+            <td className={tdClass}>{data.customer_name}</td>
             <td className={tdClass}>{new Date(data.schedule_date).toLocaleDateString()}</td>
             <td className={tdClass}>{score / 10}%</td>
             <td className={tdClass}>{data.defects}</td>
             <td className={tdClass}>
-                <button className="px-1 rounded-md border border-purple-500 text-purple-900 hover:text-black hover:bg-purple-200" onClick={onLinkClick}>links</button>
+                <button className="px-1 w-14 rounded-md border border-purple-700 text-purple-800 hover:text-black hover:bg-purple-200" onClick={onLinkClick}>{data.links.length} links</button>
             </td>
             {showLinks && <LinksInfo data={data} close={() => setShowLinks(false)} />}
         </tr>

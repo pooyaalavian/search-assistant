@@ -2,7 +2,7 @@
 export interface BaseMessage {
     conversationId: string;
     messageId: string;
-    sender: 'user' | 'assistant' | 'search_results';
+    sender: 'user' | 'assistant' | 'search_results' | 'search_request';
     content: string;
     timestamp: number;
 }
@@ -11,10 +11,15 @@ export interface UserMessage extends BaseMessage {
     sender: 'user';
 }
 
-export interface SearchMessage extends BaseMessage {
+export interface SearchResultsMessage extends BaseMessage {
     sender: 'search_results';
     results: ChassisAiSearchResult[];
     query: string;
+}
+
+export interface SearchRequestMessage extends BaseMessage {
+    sender: 'search_request';
+    query: SearchKey[];
 }
 
 export interface AssistantMessage extends BaseMessage {
@@ -26,7 +31,7 @@ export interface AssistantMessage extends BaseMessage {
     state?: 'pending' | 'completed';
 }
 
-export type Message = UserMessage | AssistantMessage | SearchMessage;
+export type Message = UserMessage | AssistantMessage | SearchResultsMessage | SearchRequestMessage;
 
 export type MessagePair = { userMessage: UserMessage, assistantMessage: AssistantMessage };
 
@@ -53,6 +58,8 @@ export interface AssistantState {
     conversation: Conversation | null;
 
     status: 'ready' | 'loading' | 'error';
+    
+    error?: string;
 }
 
 /** iso format with timezone
@@ -152,4 +159,12 @@ export interface ChassisAiSearchResult {
     metadata_storage_file_extension: string;
     links: WindchillCadItem[];
     _score?: number;
+}
+
+export interface SearchKey{
+    name: string;
+    id:string;
+    type: 'top'|'broad'|'extended';
+    mandatory: boolean;
+    selected:boolean;
 }
