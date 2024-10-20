@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AssistantState, Message, SearchKey } from "./types";
-import chatBubbleActive from './assets/chat-bubbles.svg';
-import chatBubbleInactive from './assets/chat-bubbles-gray.svg';
+// import chatBubbleActive from './assets/chat-bubbles.svg';
+// import chatBubbleInactive from './assets/chat-bubbles-gray.svg';
 import MessagePanel from "./message/Message";
 import { AssistantApi } from "./api";
 import { Dismiss20Filled } from '@fluentui/react-icons';
@@ -246,7 +246,7 @@ export default function Assistant(props: AssistantInputs) {
             <div className="fixed bottom-4 right-4 w-16 h-16 rounded-full shadow-xl shadow-gray-400/50 overflow-hidden cursor-pointer border-gray-500 border bg-white"
                 onClick={toggleShow(true)}
                 title="PACCAR Copilot is not available on this page. Navigate to a chassis page.">
-                <img className="w-10 h-10 m-3 object-contain" src={chatBubbleInactive} />
+                <img className="w-10 h-10 m-3 object-contain" src={api.staticUrl+'/chat-bubbles-gray.svg'} />
             </div>
         )
     }
@@ -256,7 +256,7 @@ export default function Assistant(props: AssistantInputs) {
             <div className="fixed bottom-4 right-4 w-16 h-16 rounded-full shadow-xl shadow-gray-400/50 overflow-hidden cursor-pointer border-cyan-500 border bg-white"
                 onClick={toggleShow(true)}
                 title="PACCAR Copilot">
-                <img className="w-10 h-10 m-3 object-contain" src={chatBubbleActive} />
+                <img className="w-10 h-10 m-3 object-contain" src={api.staticUrl+'/chat-bubbles.svg'} />
             </div>
         )
     }

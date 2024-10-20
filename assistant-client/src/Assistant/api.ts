@@ -14,10 +14,12 @@ const SessionIdKey = 'ms-ai-assistant-session-id';
 export class AssistantApi {
     apiServer: string;
     chassisElementId: string;
+    staticUrl: string;
 
     constructor(apiServer: string, chassisElementId: string) {
         this.apiServer = apiServer + '/api';
         this.chassisElementId = chassisElementId;
+        this.staticUrl = apiServer + '/static';
     }
 
     async initOrLoadConversation(chassisId: string, userId: string): Promise<Conversation> {
@@ -70,7 +72,7 @@ export class AssistantApi {
             headers: { 'Content-Type': 'application/json', },
         });
         const data: SearchKey[] = await response.json();
-        data.forEach((sk,idx) => sk.id = `${idx}`);
+        data.forEach((sk, idx) => sk.id = `${idx}`);
         return data;
     }
 
