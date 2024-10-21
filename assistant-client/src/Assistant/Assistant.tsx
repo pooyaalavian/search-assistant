@@ -297,7 +297,7 @@ export default function Assistant(props: AssistantInputs) {
                 </div>
                 <div id="paccar-assistant-portal"></div>
             </div>
-            <div id="unused-classes" className="bg-purple-800 w-[1px] h-[1px] overflow-hidden peer-checked:bg-purple-600">a</div>
+            <div id="unused-classes" className="w-[1px] h-[1px] overflow-hidden peer-checked:bg-purple-600 peer-checked:bg-red-600">a</div>
         </div>
     )
 }
