@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 
 module.exports = {
-    prefix:'tw--',
     content: [
         './src/**/*.{html,js,ts,tsx,jsx}','./index.html'
     ],
@@ -41,7 +40,14 @@ module.exports = {
                 72: '288px',
                 80: '320px',
                 96: '384px',
-              },
+            },
+            fontSize:{
+                xs: '12px',
+                sm: '14px',
+                base: '16px',
+                lg:'18px',
+                xl:'20px',
+            }
         },
     },
     variants: {
