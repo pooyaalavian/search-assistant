@@ -15,6 +15,7 @@ export interface SearchResultsMessage extends BaseMessage {
     sender: 'search_results';
     results: ChassisAiSearchResult[];
     query: string;
+    stale: boolean;
 }
 
 export interface SearchRequestMessage extends BaseMessage {
@@ -168,3 +169,4 @@ export interface SearchKey{
     mandatory: boolean;
     selected:boolean;
 }
+

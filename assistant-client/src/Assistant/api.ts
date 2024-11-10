@@ -1,4 +1,4 @@
-import { AssistantMessage, Conversation, IdString, Message, MessagePair, SearchKey, UserMessage } from "./types";
+import { AssistantMessage, Conversation, IdString, MessagePair, SearchKey, } from "./types";
 
 const K_SELECTORS = [
     ["-kwr"],
@@ -30,8 +30,20 @@ export class AssistantApi {
                 'Content-Type': 'application/json',
             },
         });
-        const data: Conversation = await response.json();
-        return data;
+        if (response.ok) {
+            const data: Conversation = await response.json();
+            const searchResults = data.messages.filter(m => m.sender === 'search_results');
+            if (searchResults.length > 1) {
+                const mostRecent = searchResults[searchResults.length - 1];
+                searchResults.forEach(m => m.stale = (m !== mostRecent));
+            }
+            return data;
+        }
+        if (response.status === 404) {
+            const error: { error: string } = await response.json();
+            throw new Error(error.error);
+        }
+        throw new Error('Failed to initialize conversation.\n'+await response.text());
     };
 
     async sendMessage(conversationId: string, message: string, userId: string): Promise<MessagePair> {
@@ -84,6 +96,11 @@ export class AssistantApi {
             body: JSON.stringify({ searchKeys, countNeeded }),
         });
         const data: Conversation = await response.json();
+        const searchResults = data.messages.filter(m => m.sender === 'search_results');
+        if (searchResults.length > 1) {
+            const mostRecent = searchResults[searchResults.length - 1];
+            searchResults.forEach(m => m.stale = (m !== mostRecent));
+        }
         return data;
     }
 

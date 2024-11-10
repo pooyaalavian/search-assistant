@@ -93,7 +93,7 @@ class AISearchClient:
         )
         
         count = results.get_count()
-        if count != 1:
+        if count > 1:
             raise ValueError(f"Expected 1 result, got {count} results.")
         
         for item in results:

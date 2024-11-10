@@ -246,7 +246,7 @@ export default function Assistant(props: AssistantInputs) {
             <div className="fixed bottom-4 right-4 w-16 h-16 rounded-full shadow-xl shadow-gray-400/50 overflow-hidden cursor-pointer border-gray-500 border bg-white"
                 onClick={toggleShow(true)}
                 title="PACCAR Copilot is not available on this page. Navigate to a chassis page.">
-                <img className="w-10 h-10 m-3 object-contain" src={api.staticUrl+'/chat-bubbles-gray.svg'} />
+                <img className="w-10 h-10 m-3 object-contain" src={api.staticUrl + '/chat-bubbles-gray.svg'} />
             </div>
         )
     }
@@ -256,48 +256,53 @@ export default function Assistant(props: AssistantInputs) {
             <div className="fixed bottom-4 right-4 w-16 h-16 rounded-full shadow-xl shadow-gray-400/50 overflow-hidden cursor-pointer border-cyan-500 border bg-white"
                 onClick={toggleShow(true)}
                 title="PACCAR Copilot">
-                <img className="w-10 h-10 m-3 object-contain" src={api.staticUrl+'/chat-bubbles.svg'} />
+                <img className="w-10 h-10 m-3 object-contain" src={api.staticUrl + '/chat-bubbles.svg'} />
             </div>
         )
     }
 
     return (
-        <div className="fixed bottom-0 right-0 w-[700px] h-[720px] max-h-screen pb-4 pr-4">
-            <div className="relative w-full h-full overflow-hidden border-gray-300 border shadow-md shadow-gray-800/50 flex flex-col rounded-sm">
-                <div id="header" className="flex-0 h-12 bg-gray-100 p-4 flex items-center border-b border-gray-300">
-                    <img src="" alt="" className="icon" />
-                    <h1 className="flex-1 font-bold">PACCAR AI Assistant</h1>
-                    <button onClick={toggleShow(false)}>
-                        <Dismiss20Filled className="text-violet-900" />
-                    </button>
-                </div>
-                <div id="messages" className="flex-1 bg-gray-100 p-4 overflow-y-auto">
-                    {!myState.conversation && !myState.error && <LoadingCard />}
-                    {myState.error && <ErrorCard error={myState.error} />}
-                    {myState.conversation && myState.conversation.messages && myState.conversation.messages.map((message, index) => <MessagePanel message={message} key={index} onSendFeedback={onSendFeedback} />)}
-
-                    {myState.conversation?.messages.length && <div className="" ref={messagesEndRef}>
-                        {showNewSearch &&
-                            <ActiveSearchRequestMessagePanel searchKeys={searchKeys} onDiscard={discardNewSearch} onSubmit={submitNewSearch} />
-                        }
-                        {!showNewSearch &&
-                            <div className="flex pt-2 justify-center">
-                                <div className="m-1">
-                                    <button onClick={handleDeleteChat} className="border border-red-700 text-red-700 p-1 rounded-md hover:bg-red-700 hover:text-white text-sm">Delete chat </button>
+        <div className="paccarassistant">
+            <div className="fixed bottom-0 right-0 w-[700px] h-[720px] max-h-screen pb-4 pr-4">
+                <div className="relative w-full h-full overflow-hidden border-gray-300 border shadow-md shadow-gray-800/50 flex flex-col rounded-sm">
+                    <div id="header" className="flex-0 h-12 bg-gray-100 p-4 flex items-center border-b border-gray-300">
+                        <img src="" alt="" className="icon" />
+                        <h1 className="flex-1 font-bold">PACCAR AI Assistant</h1>
+                        <button onClick={toggleShow(false)}>
+                            <Dismiss20Filled className="text-violet-900" />
+                        </button>
+                    </div>
+                    <div id="messages" className="flex-1 bg-gray-100 p-4 overflow-y-auto">
+                        {!myState.conversation && !myState.error && <LoadingCard />}
+                        {myState.error && <ErrorCard error={myState.error} />}
+                        {myState.conversation && myState.conversation.messages &&
+                        myState.conversation.messages.map((message, index) => <MessagePanel
+                            message={message} key={index} onSendFeedback={onSendFeedback} onSendMessage={onSendMessage}
+                        />)
+                    }
+                        {myState.conversation?.messages.length && <div className="" ref={messagesEndRef}>
+                            {showNewSearch &&
+                                <ActiveSearchRequestMessagePanel searchKeys={searchKeys} onDiscard={discardNewSearch} onSubmit={submitNewSearch} />
+                            }
+                            {!showNewSearch &&
+                                <div className="flex pt-2 justify-center">
+                                    <div className="m-1">
+                                        <button onClick={handleDeleteChat} className="border border-red-700 text-red-700 p-1 rounded-md hover:bg-red-700 hover:text-white text-sm">Delete chat </button>
+                                    </div>
+                                    <div className="m-1">
+                                        <button onClick={initiateNewSearch} className="border border-purple-700 text-purple-700 p-1 rounded-md hover:bg-purple-700 hover:text-white text-sm">Search again</button>
+                                    </div>
                                 </div>
-                                <div className="m-1">
-                                    <button onClick={initiateNewSearch} className="border border-purple-700 text-purple-700 p-1 rounded-md hover:bg-purple-700 hover:text-white text-sm">Search again</button>
-                                </div>
-                            </div>
-                        }
-                    </div>}
+                            }
+                        </div>}
+                    </div>
+                    <div id="input" className="flex-0 h-28 bg-gray-100 flex items-center border-t border-gray-300">
+                        <ComposeMessage disabled={!myState.conversation} sendMessage={onSendMessage} />
+                    </div>
+                    <div id="paccar-assistant-portal"></div>
                 </div>
-                <div id="input" className="flex-0 h-28 bg-gray-100 flex items-center border-t border-gray-300">
-                    <ComposeMessage disabled={!myState.conversation} sendMessage={onSendMessage} />
-                </div>
-                <div id="paccar-assistant-portal"></div>
+                <div id="unused-classes" className="w-[1px] h-[1px] overflow-hidden peer-checked:bg-purple-600 peer-checked:bg-red-600">a</div>
             </div>
-            <div id="unused-classes" className="w-[1px] h-[1px] overflow-hidden peer-checked:bg-purple-600 peer-checked:bg-red-600">a</div>
         </div>
     )
 }

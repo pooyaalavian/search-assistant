@@ -6,7 +6,10 @@ import ReactDOM from 'react-dom';
 import { Dismiss16Filled } from '@fluentui/react-icons';
 
 
-export function SearchResultMessage({ message, }: { message: SearchResultsMessage, }) {
+export function SearchResultMessage({ message, onSendMessage }: { message: SearchResultsMessage, onSendMessage: (content: string) => Promise<void> }) {
+    const onCompare = (comparedRows: number[]) => {
+        onSendMessage(`Compare the base chassis with chassis ${comparedRows.join(', ')}. Show differences in bold.`);
+    };
     return (
         <div className="pt-4 flex-col">
             <div className="flex-0"><MessageTime timestamp={message.timestamp} /></div>
@@ -22,7 +25,7 @@ export function SearchResultMessage({ message, }: { message: SearchResultsMessag
                     </div>
                     <div className="body p-2 ">
                         Here's the results matching your current selection.
-                        <SearchTable data={message.results} />
+                        <SearchTable data={message.results} stale={message.stale} onCompare={onCompare} />
                     </div>
                 </div>
             </div>
@@ -30,7 +33,7 @@ export function SearchResultMessage({ message, }: { message: SearchResultsMessag
     )
 }
 
-function SearchTable({ data }: { data: ChassisAiSearchResult[] }) {
+function SearchTable({ data, stale, onCompare }: { data: ChassisAiSearchResult[]; stale?: boolean; onCompare: (comparedRows: number[]) => void }) {
     const columns = [
         { title: 'ID', show: false, key: 'ID', },
         { title: '', show: true },
@@ -41,10 +44,40 @@ function SearchTable({ data }: { data: ChassisAiSearchResult[] }) {
         { title: 'Matching Score', show: true, key: '_score', },
         { title: 'Defects', show: true, key: 'defects', },
         { title: 'Links', show: true, key: 'links', },
+        { title: 'Compare', show: true, },
     ];
+
+    const [comparedRows, setComparedRows] = useState<number[]>([]);
+    const [comparisonMsg, setComparisonMsg] = useState<string | null>(
+        stale ? 'The search results are stale. Please scroll down to the most recent search results for comparison.' : null
+    );
+    const toggleRowForComparison = (rowId: number) => {
+        if (stale) {
+            return;
+        }
+        const index = comparedRows.findIndex(r => r == rowId);
+        if (index > -1) {
+            const newRows = [...comparedRows];
+            newRows.splice(index, 1);
+            setComparedRows(newRows);
+        } else {
+            if (comparedRows.length >= 3) {
+                setComparisonMsg('You can compare up to 3 items with the base chassis.');
+                setTimeout(() => setComparisonMsg(null), 3000);
+                return;
+            }
+            setComparedRows([...comparedRows, rowId]);
+        }
+    };
+
+    const onCompareClick = () => {
+        console.log('compare clicked', comparedRows);
+        onCompare(comparedRows);
+    };
 
     return <>
         <div className="overflow-x-auto">
+            {comparisonMsg && <div className="text-red-500 text-sm bg-red-100 p-1 rounded-md">{comparisonMsg}</div>}
             <table className="text-sm">
                 <thead>
                     <tr>
@@ -56,9 +89,12 @@ function SearchTable({ data }: { data: ChassisAiSearchResult[] }) {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.map((row, id) => <SearchRow data={row} rowNumber={id + 1} key={id} />)}
+                    {data.map((row, id) => <SearchRow data={row} rowNumber={id + 1} key={id} compareChecked={!!comparedRows.find(r => r == (id + 1))} compareChange={toggleRowForComparison} />)}
                 </tbody>
             </table>
+            {comparedRows.length > 0 && <div className="flex flex-row justify-end">
+                <button className="p-1 rounded-md border-purple-900 border" onClick={onCompareClick}>Compare</button>
+            </div>}
         </div>
     </>;
 }
@@ -94,7 +130,12 @@ function LinksInfo({ data, close }: { data: ChassisAiSearchResult; close: () => 
     </div>, element);
 }
 
-function SearchRow({ data, rowNumber }: { data: ChassisAiSearchResult, rowNumber: number }) {
+function SearchRow({ data, rowNumber, compareChange, compareChecked }: {
+    data: ChassisAiSearchResult;
+    rowNumber: number;
+    compareChecked: boolean;
+    compareChange: (rowId: number) => void;
+}) {
     const rowColor = rowNumber % 2 === 0 ? 'bg-gray-50' : 'bg-white';
     let score = data._score || 0;
     score = Math.round(score * 1000);
@@ -111,11 +152,11 @@ function SearchRow({ data, rowNumber }: { data: ChassisAiSearchResult, rowNumber
             <td>
                 <div className="rounded-full text-white bg-purple-800 w-4 h-4 flex items-center justify-center">
                     <div className="flex-0 text-sm">
-                {rowNumber}
+                        {rowNumber}
                     </div>
                 </div>
-                </td>
-            <td className={tdClass}>{data.chassis_number} 
+            </td>
+            <td className={tdClass}>{data.chassis_number}
                 <span className="bg-sky-400 px-1 rounded-md ml-1">{data.division}</span>
             </td>
             <td className={tdClass}>{data.chassis_year}</td>
@@ -126,6 +167,7 @@ function SearchRow({ data, rowNumber }: { data: ChassisAiSearchResult, rowNumber
             <td className={tdClass}>
                 <button className="px-1 w-14 rounded-md border border-purple-700 text-purple-800 hover:text-black hover:bg-purple-200" onClick={onLinkClick}>{data.links.length} links</button>
             </td>
+            <td className={tdClass}><input type="checkbox" checked={compareChecked} onChange={() => compareChange(rowNumber)} /></td>
             {showLinks && <LinksInfo data={data} close={() => setShowLinks(false)} />}
         </tr>
     )

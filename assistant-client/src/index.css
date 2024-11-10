@@ -1,3 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.paccarassistant{
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+}

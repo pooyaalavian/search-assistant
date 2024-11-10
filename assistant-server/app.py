@@ -88,15 +88,19 @@ async def init_or_load_conversation():
     client: CosmosConversationClient = current_app.cosmos_conversation_client
     conv = await client.search_conversation(user_id=user_id, chassis_id=chassis_id)
     if conv is None:
-        conv = await client.create_conversation(user_id=user_id, chassis_id=chassis_id)
         search_client: AISearchClient = current_app.search_client
         # 0. Get original chassis data for conversation
         chassis_data = search_client.get_chassis_by_id(chassis_id)
+        
+        # 0.1. If chassis does not exist, return error
+        if chassis_data is None:
+            return jsonify({"error": "This chassis was not included in PoC dataset. PACCAR Assistant is not available."}), 404
         
         # 1. perform search
         search_result = search_client.get_matching_chassis(chassis_id, count_needed=10)
 
         # 2. save search in cosmos message
+        conv = await client.create_conversation(user_id=user_id, chassis_id=chassis_id)
         msg = await client.add_search_results_message(conv["id"], chassis_data, search_result)
 
         # 3. update conv with search
@@ -110,7 +114,7 @@ async def handle_chat(conv, oai_client: AsyncAzureOpenAI, cosmos_client:CosmosCo
     preamble = [
         {
             "role": "system",
-            "content": "You are Chassis design engineer assistant. A chassis engineer (working on the design of the chassis for a truck ordered by customer) is chatting with you. He is given a bunch of chassis that are similar to the chassis he is designing. Help answer his questions. When possible, display the results in tabular format. He may refer to the the base chassis as 'my chassis' or 'current chassis' and to the matching chassis as search results.",
+            "content": "You are Chassis design engineer assistant. A chassis engineer (working on the design of the chassis for a truck ordered by customer) is chatting with you. He is given a bunch of chassis that are similar to the chassis he is designing. Help answer his questions. When possible, display the results in tabular format. He may refer to the the base chassis as 'my chassis' or 'current chassis' and to the matching chassis as search results. If you don't know the answer to a question reply with 'I don't know'. Do not make up information. If the answer is not in the search results, first mention that your answer is not based on the information provided, then provide the answer. If the answer is in the search results, provide the answer and mention that it is based on the search results.",
         },
         {"role": "user", "content": "Show me the related chassis to my base chassis."},
     ]
